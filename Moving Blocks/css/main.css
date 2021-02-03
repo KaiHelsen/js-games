@@ -1,0 +1,36 @@
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    font-family: 'EB Garamond', serif;
+    font-size: 20px;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+#wrapper{
+    box-sizing: border-box;
+    height: 100vh;
+    width: 100vw;
+
+}
+.block{
+    position: absolute;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 10vh;
+    /*width: 10vh;*/
+    /*height: 10vh;*/
+    font-size: 2vh;
+    box-shadow: 0 0 2px black;
+}
+
+.player{
+    color: white;
+    background-color: darkred;
+}
+
+.enemy{
+    color: #212121;
+    background-color: deeppink;
+}
