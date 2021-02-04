@@ -4,12 +4,12 @@
 (function ()
 {
     //define constant values for gameplay
-    const PLAYER_SPEED = 600; //units per second
+    const PLAYER_SPEED = 1200; //units per second
     const PLAYER_ROTATION_SPEED = 30; //degrees per second
     const FPS = 60;
     const DELTA_TIME = 1 / FPS;
-    const MAXLIVES = 3;
-    const MAXENEMIES = 5;
+    const MAX_LIVES = 3;
+    const MAX_ENEMIES = 20;
 
     //vector and vector functions
     let Vector = function (x = 0, y = 0)
@@ -60,6 +60,23 @@
     {
         this.x *= value;
         this.y *= value;
+    }
+
+    /**
+     * clamp maximum magnitude of this vector to value
+     * @param value
+     */
+    Vector.prototype.clamp = function (value = 1)
+    {
+        let newMagnitude = Math.min(this.magnitude(), value);
+        this.normalize()
+        this.multiply(newMagnitude);
+    }
+
+    Vector.prototype.invert = function ()
+    {
+        this.x *= -1;
+        this.y *= -1;
     }
 
     //rect and rect functions
@@ -113,10 +130,13 @@
     //block class
     class Block
     {
+        momentum = new Vector(0, 0);
         element;                //display element
         name = "myName";        //name of this object
         collider;               //collider rect of this object
         rotation;               //stores rotation of this object
+        acceleration = 60;
+        deceleration = 8;
         isActive = true;
 
         constructor(element, name = "myName", height = 20, width = 20, posX = 0, posY = 0) {
@@ -134,9 +154,35 @@
          * @param {Vector} direction direction vector in which the block should move
          */
         move(direction) {
-            direction.normalize();
-            direction.multiply(PLAYER_SPEED * DELTA_TIME);
-            this.collider.move(direction.x, direction.y);
+            if (direction.magnitude() > 0 && direction) {
+                direction.normalize();
+                // direction.multiply(PLAYER_SPEED * DELTA_TIME);
+                direction.multiply(this.acceleration * DELTA_TIME);
+
+                console.log(direction);
+                this.momentum.add(direction);
+                this.momentum.clamp(PLAYER_SPEED * DELTA_TIME);
+
+            }
+            else
+                if(this.momentum.magnitude() >= this.deceleration * DELTA_TIME)
+            {
+                let deceleration = new Vector(this.momentum.x, this.momentum.y);
+                deceleration.normalize();
+
+                deceleration.invert();
+                deceleration.multiply(this.deceleration * DELTA_TIME);
+
+                console.log(deceleration)
+                this.momentum.add(deceleration);
+
+            }
+            else {
+                this.momentum.multiply(0);
+            }
+
+
+            this.collider.move(this.momentum.x, this.momentum.y);
         }
 
         collisionCheck(otherRect) {
@@ -157,6 +203,18 @@
             //clamp within bounds
             this.collider.center.x = Math.max(this.collider.size.x / 2, Math.min(this.collider.center.x, window.innerWidth - this.collider.size.x / 2));
             this.collider.center.y = Math.max(this.collider.size.y / 2, Math.min(this.collider.center.y, window.innerHeight - this.collider.size.y / 2));
+
+            if(this.collider.position.x <= 0 || this.collider.position.x + this.collider.size.x >= window.innerWidth)
+            {
+                this.momentum.x = this.momentum.x * -.5;
+            }
+            if(this.collider.position.y <= 0 || this.collider.position.y + this.collider.size.y >= window.innerHeight)
+            {
+                this.momentum.y = this.momentum.y * -.5
+            }
+
+
+            //limit momentum
         }
 
         draw() {
@@ -190,7 +248,7 @@
     {
         maxSpeed = 0; //maximum speed at which this unit moves;
         speed = 0;
-        acceleration = 200;
+        acceleration = 100;
         targetPosition = new Vector(0, 0);  //target position of this unit
         isMoving = false;   //whether this unit is moving towards its target position or not. is false if it has no target position, or if it has reached its target position.
         isActive = false;
@@ -212,7 +270,7 @@
             //create a vector which determines which way the box should move
             //easy enough, subtract the target position from the current position, store in vector
             //normalize, multiply by speed * DELTA_TIME and transform
-            if (this.collider.center == this.targetPosition) {
+            if (this.collider.center === this.targetPosition) {
                 console.log("already at position! try again!");
                 return;
             }
@@ -377,22 +435,22 @@
     let screenSize = {width: window.innerWidth, height: window.innerHeight};
 
     let game = new GameManager(
-        MAXLIVES,
+        MAX_LIVES,
         document.getElementById("livesDsp"),
         document.getElementById("scoreDsp"),
         document.getElementById("playingField"),
         document.getElementById("gameOverScreen")
     );
 
-    let playerCube = new Block(document.getElementById("player"), "player", 90, 90, screenSize.width / 2, screenSize.height / 2);
+    let playerCube = new Block(document.getElementById("player"), "player", 80, 80, screenSize.width / 2, screenSize.height / 2);
 
-    let spawner = new EnemySpawner(5, 3, 3, 6);
+    let spawner = new EnemySpawner(MAX_ENEMIES, 3, 3, 6);
 
     // let enemyCube = new EnemyBlock(document.getElementById("enemy_01"), "enemy", 90, 90, 120, 120, 300);
 
     let enemyCubeTemplate = document.getElementById("enemyTemplate").content.cloneNode(true);
 
-    for (let i = 0; i < MAXENEMIES; i++) {
+    for (let i = 0; i < MAX_ENEMIES; i++) {
         //create a series of enemies
         //first, generate a new element for the enemy to use
         let newEnemyNode = enemyCubeTemplate.cloneNode(true);
@@ -404,7 +462,7 @@
 
         document.getElementById("wrapper").appendChild(newEnemyNode);
 
-        spawner.addEnemyToList(new EnemyBlock(document.getElementById(newId), newName, 90, 90, 120, 120, 300), false);
+        spawner.addEnemyToList(new EnemyBlock(document.getElementById(newId), newName, 60 + i * 5, 60 + i * 5, 120, 120, 300), false);
     }
 
     //spawn first enemy for testing purposes
