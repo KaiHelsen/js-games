@@ -6,7 +6,7 @@
     //define constant values for gameplay
     const PLAYER_SPEED = 1200; //units per second
     const PLAYER_ROTATION_SPEED = 30; //degrees per second
-    const FPS = 40;
+    const FPS = 60;
     const DELTA_TIME = 1 / FPS;
     const MAX_LIVES = 3;
     const MAX_ENEMIES = 20;
@@ -159,7 +159,7 @@
                 // direction.multiply(PLAYER_SPEED * DELTA_TIME);
                 direction.multiply(this.acceleration * DELTA_TIME);
 
-                console.log(direction);
+                // console.log(direction);
                 this.momentum.add(direction);
                 this.momentum.clamp(PLAYER_SPEED * DELTA_TIME);
 
@@ -173,7 +173,7 @@
                 deceleration.invert();
                 deceleration.multiply(this.deceleration * DELTA_TIME);
 
-                console.log(deceleration)
+                // console.log(deceleration)
                 this.momentum.add(deceleration);
 
             }
@@ -271,11 +271,11 @@
             //easy enough, subtract the target position from the current position, store in vector
             //normalize, multiply by speed * DELTA_TIME and transform
             if (this.collider.center === this.targetPosition) {
-                console.log("already at position! try again!");
+                // console.log("already at position! try again!");
                 return;
             }
 
-            console.log("moving...");
+            // console.log("moving...");
             let direction = new Vector(0, 0);
 
             //create directional vector to target position
@@ -293,7 +293,7 @@
 
             if (direction.magnitude() <= 3) {
                 this.isMoving = false;
-                console.log(this.name + " has reached its destination!");
+                // console.log(this.name + " has reached its destination!");
             }
             else {
                 direction.normalize();
@@ -311,7 +311,7 @@
 
             this.setTargetPosition(newTargetX, newTargetY);
 
-            console.log("new target position: " + this.targetPosition.x, this.targetPosition.y);
+            // console.log("new target position: " + this.targetPosition.x, this.targetPosition.y);
         }
 
         spawn(posX = 0, posY = 0) {
@@ -352,7 +352,7 @@
                 let posX = Math.random() * window.innerWidth;
                 let posY = Math.random() * -200;
 
-                console.log("Spawning new enemy!: " + enemy.name + " at X: " + posX + " Y: " + posY);
+                // console.log("Spawning new enemy!: " + enemy.name + " at X: " + posX + " Y: " + posY);
 
                 enemy.spawn(posX, posY);
             }
@@ -470,9 +470,6 @@
 
 
     let input = {up: false, down: false, left: false, right: false};
-
-
-    console.log(DELTA_TIME);
 
     document.addEventListener("keydown", keyDownHandler, false);
 
