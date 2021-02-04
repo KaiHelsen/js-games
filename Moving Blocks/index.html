@@ -6,14 +6,40 @@
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-<div id="wrapper" class="wrapper" style="background-color:pink;">
-    <div id="player" class="block player" >
-        player
-    </div>
+<div id="wrapper" class="wrapper">
+    <div id="playingField" class="bg-dark-2 h-100 w-100">
+        <header id="hud" class="fixedTop row">
+            <div class="col-4"><h3>LIVES</h3></div>
+            <div id="livesDsp" class="col-2">3</div>
+            <div class="col-4"><h3>SCORE</h3></div>
+            <div id="scoreDsp" class="col-2">9000</div>
 
-    <div id="enemy_01" class="block enemy">
-        an enemy
+        </header>
+        <div id="player"
+             class="block player text-dark bg-blue text-centered font-montserrat rounded-1 shadow d-flex-center">
+            <p class=" textContent align-self-center">
+                player
+            </p>
+        </div>
+
+        <template id="enemyTemplate">
+            <div id="enemy"
+                 class="block enemy text-light bg-red text-centered font-montserrat rounded-1 shadow d-flex-center">
+                <p class=" textContent align-self-center">
+                    contents
+                </p>
+            </div>
+        </template>
+
+        <div id="gameOverScreen" class="d-flex-center bg-red text-light font-josefin text-largest w-100 h-100">
+            <div class="bg-red text-light font-montserrat text-largest padding-3 w-100 h-20 align-self-center text-centered shadow">
+            GAME OVER!
+            </div>
+        </div>
     </div>
+    <!--    <div id="enemy_01" class="block enemy">-->
+    <!--        an enemy-->
+    <!--    </div>-->
 </div>
 
 <script src="js/main.js"></script>
