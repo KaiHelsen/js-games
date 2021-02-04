@@ -6,7 +6,7 @@
     //define constant values for gameplay
     const PLAYER_SPEED = 1200; //units per second
     const PLAYER_ROTATION_SPEED = 30; //degrees per second
-    const FPS = 60;
+    const FPS = 40;
     const DELTA_TIME = 1 / FPS;
     const MAX_LIVES = 3;
     const MAX_ENEMIES = 20;
@@ -165,7 +165,7 @@
 
             }
             else
-                if(this.momentum.magnitude() >= this.deceleration * DELTA_TIME)
+                if(this.momentum.magnitude() >= this.deceleration * DELTA_TIME * .2)
             {
                 let deceleration = new Vector(this.momentum.x, this.momentum.y);
                 deceleration.normalize();
@@ -206,11 +206,11 @@
 
             if(this.collider.position.x <= 0 || this.collider.position.x + this.collider.size.x >= window.innerWidth)
             {
-                this.momentum.x = this.momentum.x * -.5;
+                this.momentum.x = this.momentum.x * -.3;
             }
             if(this.collider.position.y <= 0 || this.collider.position.y + this.collider.size.y >= window.innerHeight)
             {
-                this.momentum.y = this.momentum.y * -.5
+                this.momentum.y = this.momentum.y * -.3;
             }
 
 
