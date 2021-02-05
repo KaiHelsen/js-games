@@ -184,6 +184,7 @@ ight
     position: absolute;
     height: 600px;
     width: 600px;
+    white-space: nowrap !important;
 
     background-color: #e2e2e255;
     border-radius: 50% !important;

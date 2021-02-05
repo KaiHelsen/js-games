@@ -151,30 +151,13 @@
             this.position.y + this.size.y > otherRect.position.y);
     }
 
-    Rect.prototype.resize = function(newWidth, newHeight)
+    Rect.prototype.resize = function (newWidth, newHeight)
     {
-        this.position.x = this.center.x - newWidth/2;
-        this.position.y = this.center.y - newHeight/2;
+        this.position.x = this.center.x - newWidth / 2;
+        this.position.y = this.center.y - newHeight / 2;
 
         this.size.x = newWidth;
         this.size.y = newHeight;
-    }
-
-    let Circle = function (x = 0, y = 0, radius = 0, posX = 0, posY = 0)
-    {
-        this.position = new Vector(x, y);
-        this.radius = radius;
-        this.diameter = radius * 2;
-        this.center = new Vector(x + radius, y + radius);
-    }
-
-    Circle.prototype.setPosition = function (xPos = this.center.x, yPos = this.center.y)
-    {
-        this.center.x = xPos;
-        this.center.y = yPos;
-
-        this.position.x = this.center.x - this.radius;
-        this.position.y = this.center.y - this.radius;
     }
 
     /**
@@ -464,37 +447,36 @@
             this.draw();
         }
 
-        update(){
+        update() {
             this.draw();
+            return this.isActive;
         }
 
-        drain(){
-            if(this.isActive && this.points > 0)
-            {
+        drain() {
+            if (this.isActive && this.points > 0) {
                 let drain = Math.min(this.transferRate * DELTA_TIME, this.points);
                 this.points -= drain;
                 this.radius = this.points + this.minRadius;
 
                 return drain;
             }
-            else if(this.points <= 0)
-            {
+            else if (this.points <= 0) {
                 this.isActive = false;
                 return null;
             }
         }
 
-        setRandomPosition(){
+        setRandomPosition() {
             console.log("picking new random position for control point");
             let newPosition = new Vector();
             newPosition.x = Math.random() * (screen.x - this.radius * 2) + this.radius;
             newPosition.y = Math.random() * (screen.y - this.radius * 2) + this.radius;
 
-            this.collider.setPosition(newPosition.x,newPosition.y);
+            this.collider.setPosition(newPosition.x, newPosition.y);
         }
 
-        spawn(){
-            this.points = Math.random()*(this.maxPoints - this.minPoints) + this.minPoints | 0;
+        spawn() {
+            this.points = Math.random() * (this.maxPoints - this.minPoints) + this.minPoints | 0;
             this.radius = this.points + this.minRadius;
             this.collider.size.x = this.radius * 2;
             this.collider.size.y = this.radius * 2;
@@ -502,7 +484,7 @@
             this.setRandomPosition();
         }
 
-        draw(){
+        draw() {
 
             this.collider.resize(this.radius * 2, this.radius * 2);
             super.draw();
@@ -602,29 +584,41 @@
             this.gameDsp = gameplayDisplay
             this.gameOverDsp = gameOverDisplay
             this.timer = 0;
+            this.gameInterval = 0;
 
             this.score = 0;
 
             this.scheduler = [];
         };
 
-        startGame(onStart = new Function()) {
+        startGame(onStart = new Function(), tick = new Function()) {
             this.gameDsp.style.visibility = "visible";
             this.gameOverDsp.style.visibility = "hidden";
             onStart();
+            this.gameInterval = setInterval(() =>
+                {
+                    tick();
+                    this.update();
+                }
+                , DELTA_TIME * 1000);
         }
 
         endGame() {
             // this.gameDsp.style.visibility = "hidden";
-            gameOver();
+            clearInterval(this.gameInterval);
             this.gameOverDsp.style.visibility = "visible";
             console.log("Game over!");
         }
 
-        tick(callback = new Function()) {
+        update() {
             this.timer += DELTA_TIME;
+
+            let stuffToDo = this.scheduler.filter(element => element.time <= this.timer);
+            for(let element of stuffToDo){
+                element.task();
+                this.scheduler.splice(this.scheduler.findIndex(thing => thing === element), 1);
+            }
             this.updateScore();
-            callback();
             //update Score display
         }
 
@@ -640,8 +634,9 @@
             }
         }
 
-        schedule(callbackFunction, delay, repeats) {
-
+        addScheduledItem(callbackFunction, delay)
+        {
+            this.scheduler.push({task: callbackFunction, time: delay + this.timer});
         };
     }
 
@@ -730,9 +725,9 @@
     }
 
 
-    //=============================\\
-    //===BEGIN INITIALIZING GAME===\\
-    //=============================\\
+//=============================\\
+//===BEGIN INITIALIZING GAME===\\
+//=============================\\
 
     console.log("initializing...");
     let screen = new Vector(window.innerWidth, window.innerHeight);
@@ -745,7 +740,7 @@
         document.getElementById("gameOverScreen")
     );
 
-    //initialize classes
+//initialize classes
 
     let inputHandler = new InputManager();
 
@@ -765,9 +760,9 @@
 
     let enemyCubeTemplate = document.getElementById("enemyTemplate").content.cloneNode(true);
 
-    let controlPoint = new ControlPoint(document.getElementById("scoreZone"), "Control Point", 400);
+    let controlPoint = new ControlPoint(document.getElementById("controlPoint"), "Control Point", 400);
 
-    //initialize enemies
+//initialize enemies
     for (let i = 0; i < MAX_ENEMIES; i++) {
         //create a series of enemies
         //first, generate a new element for the enemy to use
@@ -789,24 +784,27 @@
         screen.y = window.innerHeight;
     }, false);
 
-    //initialize gameTimer
-    let gameTimer = setInterval(tick, DELTA_TIME * 1000);
+//initialize gameTimer
 
-
-    //START GAME
-    game.startGame();
+//START GAME
+    game.startGame(() => {console.log("game starting!")}, tick);
     spawner.start();
 
+    //TEST SCHEDULER
+    game.addScheduledItem(()=>{console.log("scheduler test!" + game.timer);}, 10)
+
     function tick() {
-        game.tick();
+        game.update();
 
         playerCube.update();
         spawner.update();
-        controlPoint.update();
+        if (!controlPoint.update()) {
 
+        }
+
+        //check if player is within radius range of control point
         let cpDistance = Vector.subtract(playerCube.collider.center, controlPoint.collider.center);
-        if(cpDistance.magnitude() < controlPoint.radius)
-        {
+        if (cpDistance.magnitude() < controlPoint.radius) {
             game.score += controlPoint.drain();
         }
 
@@ -820,10 +818,6 @@
             }
             loopIndex++;
         }
-    }
 
-
-    function gameOver() {
-        clearInterval(gameTimer);
     }
 }());
