@@ -449,7 +449,6 @@
 
         update() {
             this.draw();
-            return this.isActive;
         }
 
         drain() {
@@ -462,6 +461,8 @@
             }
             else if (this.points <= 0) {
                 this.isActive = false;
+                setTimeout(()=>{this.spawn();},3 * 1000);
+
                 return null;
             }
         }
@@ -476,16 +477,18 @@
         }
 
         spawn() {
+            this.isActive = true;
+
             this.points = Math.random() * (this.maxPoints - this.minPoints) + this.minPoints | 0;
             this.radius = this.points + this.minRadius;
             this.collider.size.x = this.radius * 2;
             this.collider.size.y = this.radius * 2;
 
             this.setRandomPosition();
+            this.draw();
         }
 
         draw() {
-
             this.collider.resize(this.radius * 2, this.radius * 2);
             super.draw();
         }
@@ -798,13 +801,11 @@
 
         playerCube.update();
         spawner.update();
-        if (!controlPoint.update()) {
-
-        }
+        controlPoint.update();
 
         //check if player is within radius range of control point
         let cpDistance = Vector.subtract(playerCube.collider.center, controlPoint.collider.center);
-        if (cpDistance.magnitude() < controlPoint.radius) {
+        if (cpDistance.magnitude() < controlPoint.radius && controlPoint.isActive) {
             game.score += controlPoint.drain();
         }
 
