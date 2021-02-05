@@ -5,7 +5,7 @@
 {
     //define constant values for gameplay
     const PLAYER_SPEED = 1200; //units per second
-    const FPS = 60;
+    const FPS = 30;
     const DELTA_TIME = 1 / FPS;
     const MAX_LIVES = 3;
     const MAX_ENEMIES = 20;
@@ -151,6 +151,15 @@
             this.position.y + this.size.y > otherRect.position.y);
     }
 
+    Rect.prototype.resize = function(newWidth, newHeight)
+    {
+        this.position.x = this.center.x - newWidth/2;
+        this.position.y = this.center.y - newHeight/2;
+
+        this.size.x = newWidth;
+        this.size.y = newHeight;
+    }
+
     let Circle = function (x = 0, y = 0, radius = 0, posX = 0, posY = 0)
     {
         this.position = new Vector(x, y);
@@ -189,12 +198,6 @@
      */
     class Block
     {
-        element;                //display element
-        name = "myName";        //name of this object
-        collider;               //collider rect of this object
-        rotation;               //stores rotation of this object
-        isActive = true;        //whether or not this element is "active" within the world/game and should be accounted for
-
         /**
          * The block class is the basic element that handles in-game block elements. player, enemies, obstacles, etc.
          * @param {HTMLElement} element HTML element that is displayed in-game.
@@ -202,14 +205,14 @@
          * @param {number} height height of this element's rect
          * @param {number} width width of this element's rect
          * @param {number} posX X position of the element's center point.
-         * @param {number} posY Y position of the elmeent's center point.
+         * @param {number} posY Y position of the element's center point.
          */
         constructor(element, name = "myName", height = 20, width = 20, posX = 0, posY = 0) {
             this.element = element;
             this.name = name;
             this.collider = new Rect(0, 0, height, width);
             this.collider.setPosition(posX, posY);
-            this.rotation = 0;
+            this.isActive = true;
 
             this.draw();
         };
@@ -224,6 +227,13 @@
 
         draw() {
 
+            if (this.isActive) {
+                this.element.style.visibility = "visible";
+            }
+            else {
+                this.element.style.visibility = "hidden";
+            }
+
             //draw element at position
             this.element.style.left = this.collider.position.x + "px";
             this.element.style.top = this.collider.position.y + "px";
@@ -234,12 +244,6 @@
             this.element.style.width = this.collider.size.y + "px";
             this.element.style.height = this.collider.size.x + "px";
 
-            if (!this.isActive) {
-                this.element.style.visibility = "hidden"
-            }
-            else {
-                this.element.style.visibility = "visible"
-            }
 
         }
 
@@ -348,23 +352,22 @@
             this.maxSpeed = speed;
             this.isActive = false;
             this.isMoving = false;
+            this.draw();
 
             this.pickDestination();
         }
 
-        update()
-        {
-            if(this.isMoving)
-            {
+        update() {
+            if (this.isMoving) {
                 this.moveToTarget();
             }
-            else
-            {
+            else {
                 this.pickDestination();
             }
 
             this.draw();
         }
+
         setTargetPosition(posX, posY) {
             this.targetPosition.x = posX;
             this.targetPosition.y = posY;
@@ -431,6 +434,7 @@
             this.element.isMoving = false;
             this.isActive = false;
             this.forcePosition(0, 0);
+            this.draw();
         }
 
     }
@@ -448,9 +452,60 @@
         constructor(element, name = "myName", radius = 0, posX = 0, posY = 0) {
             super(element, name, radius * 2, radius * 2, posX, posY);
             this.radius = radius;
-            this.isActive = false;
+            this.minRadius = 60;
 
+            this.maxPoints = 200;   //maximum amount of points that the zone can spawn with
+            this.minPoints = 100;   //minimum amount of points that the zone can spawn with
+            this.points = 0;        //amount of points currently the zone
+            this.transferRate = 10;  //points per second
+            this.isActive = true;
+
+            this.spawn();
             this.draw();
+        }
+
+        update(){
+            this.draw();
+        }
+
+        drain(){
+            if(this.isActive && this.points > 0)
+            {
+                let drain = Math.min(this.transferRate * DELTA_TIME, this.points);
+                this.points -= drain;
+                this.radius = this.points + this.minRadius;
+
+                return drain;
+            }
+            else if(this.points <= 0)
+            {
+                this.isActive = false;
+                return null;
+            }
+        }
+
+        setRandomPosition(){
+            console.log("picking new random position for control point");
+            let newPosition = new Vector();
+            newPosition.x = Math.random() * (screen.x - this.radius * 2) + this.radius;
+            newPosition.y = Math.random() * (screen.y - this.radius * 2) + this.radius;
+
+            this.collider.setPosition(newPosition.x,newPosition.y);
+        }
+
+        spawn(){
+            this.points = Math.random()*(this.maxPoints - this.minPoints) + this.minPoints | 0;
+            this.radius = this.points + this.minRadius;
+            this.collider.size.x = this.radius * 2;
+            this.collider.size.y = this.radius * 2;
+
+            this.setRandomPosition();
+        }
+
+        draw(){
+
+            this.collider.resize(this.radius * 2, this.radius * 2);
+            super.draw();
         }
     }
 
@@ -471,6 +526,14 @@
             this.initialDelay = initialDelay;
             this.delayMin = spawnDelayMin;
             this.delayMax = spawnDelayMax;
+
+        }
+
+        update() {
+            let activeEnemies = this.enemiesList.filter(element => element.isActive);
+            for (let enemy of activeEnemies) {
+                enemy.update();
+            }
         }
 
         addEnemyToList(newEnemy = new EnemyBlock(), isActive = false) {
@@ -518,8 +581,8 @@
             //remove enemy from play
             this.enemiesList[enemyIndex].deSpawn();
             //set timer to spawn enemy again
-
-            setTimeout(() => this.spawnEnemy(), 10 * 1000);
+            //
+            // setTimeout(() => this.spawnEnemy(), 10 * 1000);
         }
 
     }
@@ -566,7 +629,7 @@
         }
 
         updateScore() {
-            this.scoreDsp.innerText = this.timer | 0;
+            this.scoreDsp.innerText = this.score | 0;
         }
 
         loseLife() {
@@ -587,14 +650,14 @@
      */
     class InputManager
     {
-           //stores whether a key is down or not. this is necessary for smooth movement
+        //stores whether a key is down or not. this is necessary for smooth movement
 
         constructor() {
             //add event listeners for keyboard input
             this.input = {up: false, down: false, left: false, right: false};
 
-            document.addEventListener("keydown", (event)=>{this.keyDownHandler(event)}, false);
-            document.addEventListener("keyup", (event)=>{this.keyUpHandler(event)}, false);
+            document.addEventListener("keydown", (event) => {this.keyDownHandler(event)}, false);
+            document.addEventListener("keyup", (event) => {this.keyUpHandler(event)}, false);
         }
 
         /**
@@ -602,7 +665,7 @@
          * @returns {Vector}
          */
         getDirection() {
-            this.direction = new Vector(0,0);
+            this.direction = new Vector(0, 0);
             if (this.input.up) {
                 this.direction.y--;
             }
@@ -702,10 +765,9 @@
 
     let enemyCubeTemplate = document.getElementById("enemyTemplate").content.cloneNode(true);
 
-    let controlPointTemplate = document.getElementById("controlPointTemplate").content.cloneNode(true);
+    let controlPoint = new ControlPoint(document.getElementById("scoreZone"), "Control Point", 400);
 
-    let controlPoint = new ControlPoint(document.querySelector(".controlPoint"), "Control Point", 400, screen.x / 2, screen.y / 2);
-
+    //initialize enemies
     for (let i = 0; i < MAX_ENEMIES; i++) {
         //create a series of enemies
         //first, generate a new element for the enemy to use
@@ -737,15 +799,20 @@
 
     function tick() {
         game.tick();
-        //player movement system
 
         playerCube.update();
+        spawner.update();
+        controlPoint.update();
+
+        let cpDistance = Vector.subtract(playerCube.collider.center, controlPoint.collider.center);
+        if(cpDistance.magnitude() < controlPoint.radius)
+        {
+            game.score += controlPoint.drain();
+        }
 
         let loopIndex = 0;
         for (let enemy of spawner.enemiesList) {
             if (enemy.isActive) {
-                enemy.update();
-                enemy.draw();
                 if (playerCube.collisionCheck(enemy.collider)) {
                     game.loseLife();
                     spawner.kill(loopIndex);
