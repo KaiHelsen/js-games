@@ -175,6 +175,21 @@ ight
 
 .block{
     position: absolute;
+    padding: 4px;
+
+    z-index: 3;
+}
+
+.controlPoint{
+    position: absolute;
+    height: 600px;
+    width: 600px;
+
+    background-color: #e2e2e255;
+    border-radius: 50% !important;
+    border: lightgrey 2px solid;
+
+    z-index: 1;
 }
 
 #hud{
@@ -204,22 +219,6 @@ ight
 #Game{
     height: 70vh;
 
-}
-
-#agonyDisplay{
-    font-size: 5vh;
-}
-#clickerBtn{
-    background-color: #d52f46;
-    color: #282828;
-    border: none;
-    padding: 5px 10px 5px 10px;
-    font-size: 2em;
-}
-#clickerBtn:hover:enabled{
-    transition: 0.3s;
-    color: lightgrey;
-    text-shadow: 0 0 2px lightgrey;
 }
 
 #bottomMenu{
