@@ -43,7 +43,7 @@
         return new Vector(Vector1.x + Vector2.x, Vector1.y + Vector2.y);
     }
 
-    Vector.subtract = function(Vector1, Vector2)
+    Vector.subtract = function (Vector1, Vector2)
     {
         return new Vector(Vector1.x - Vector2.x, Vector1.y - Vector2.y);
     }
@@ -151,15 +151,15 @@
             this.position.y + this.size.y > otherRect.position.y);
     }
 
-    let Circle = function(x = 0, y = 0, radius = 0, posX = 0, posY = 0)
+    let Circle = function (x = 0, y = 0, radius = 0, posX = 0, posY = 0)
     {
-        this.position = new Vector(x,y);
+        this.position = new Vector(x, y);
         this.radius = radius;
         this.diameter = radius * 2;
         this.center = new Vector(x + radius, y + radius);
     }
 
-    Circle.prototype.setPosition = function(xPos = this.center.x, yPos = this.center.y)
+    Circle.prototype.setPosition = function (xPos = this.center.x, yPos = this.center.y)
     {
         this.center.x = xPos;
         this.center.y = yPos;
@@ -218,7 +218,7 @@
             return this.collider.checkCollisionRect(otherRect);
         }
 
-        update(){
+        update() {
             this.draw();
         }
 
@@ -234,8 +234,12 @@
             this.element.style.width = this.collider.size.y + "px";
             this.element.style.height = this.collider.size.x + "px";
 
-            if(!this.isActive){this.element.style.visibility = "hidden"}
-            else{this.element.style.visibility = "visible"}
+            if (!this.isActive) {
+                this.element.style.visibility = "hidden"
+            }
+            else {
+                this.element.style.visibility = "visible"
+            }
 
         }
 
@@ -256,19 +260,22 @@
         acceleration = 0; //rate at which this object accelerates. ie. this is the amount by which the speed increases per second
         drag = 0; //slows down object movement gently
 
-
-        constructor(element, name, height, width, posX, posY, maxSpeed, acceleration, drag) {
+        constructor(element, inputManager, name, height, width, posX, posY, maxSpeed, acceleration, drag) {
             super(element, name, height, width, posX, posY);
             this.maxSpeed = maxSpeed;
             this.acceleration = acceleration;
             this.drag = drag;
+
+            this.inputHandler = inputManager;
         }
 
-        update(){
-            move(inputVector)
+        update() {
 
+            this.move(this.inputHandler.getDirection());
+            this.forceGameBounds();
             this.draw()
         }
+
         /**
          * Based on input direction vector, this function moves the Player Controller based on simple physics
          * first, evaluate whether there is any input at all. If there is, the object is accelerated in the direction of the input
@@ -278,7 +285,7 @@
          * @param {Vector} direction direction vector in which forces are being applied to the Player Controller
          */
         move(direction) {
-            if (direction.magnitude() > 0 && direction){
+            if (direction.magnitude() > 0 && direction) {
                 direction.normalize();
 
                 direction.multiply(this.acceleration * DELTA_TIME);
@@ -286,8 +293,7 @@
                 this.momentum = Vector.add(this.momentum, direction);
             }
 
-            if(Math.abs(this.momentum.x) >= this.drag * DELTA_TIME || Math.abs(this.momentum.y) >= this.drag * DELTA_TIME)
-            {
+            if (Math.abs(this.momentum.x) >= this.drag * DELTA_TIME || Math.abs(this.momentum.y) >= this.drag * DELTA_TIME) {
                 //add friction deceleration if object is NOT at rest.
                 let velocity = this.momentum.magnitude();
                 let friction = new Vector(this.momentum.x, this.momentum.y);
@@ -296,7 +302,7 @@
 
                 this.momentum = Vector.add(this.momentum, friction);
             }
-            else{
+            else {
                 this.momentum.multiply(0);
             }
 
@@ -336,16 +342,29 @@
         speed = 0;
         acceleration = 100;
         targetPosition = new Vector(0, 0);  //target position of this unit
-        isMoving = false;   //whether this unit is moving towards its target position or not. is false if it has no target position, or if it has reached its target position.
-        isActive = false;
 
         constructor(element, name = "enemyName", height = 20, width = 20, posX = 0, posY = 0, speed = 600) {
             super(element, name, height, width, posX, posY);
             this.maxSpeed = speed;
+            this.isActive = false;
+            this.isMoving = false;
 
             this.pickDestination();
         }
 
+        update()
+        {
+            if(this.isMoving)
+            {
+                this.moveToTarget();
+            }
+            else
+            {
+                this.pickDestination();
+            }
+
+            this.draw();
+        }
         setTargetPosition(posX, posY) {
             this.targetPosition.x = posX;
             this.targetPosition.y = posY;
@@ -426,8 +445,7 @@
     {
         radius = 0
 
-        constructor(element, name = "myName", radius = 0, posX = 0, posY = 0)
-        {
+        constructor(element, name = "myName", radius = 0, posX = 0, posY = 0) {
             super(element, name, radius * 2, radius * 2, posX, posY);
             this.radius = radius;
             this.isActive = false;
@@ -435,6 +453,7 @@
             this.draw();
         }
     }
+
     /**
      * Enemy Manager is built to handle enemies easily. It's functions include (but are not limited to):
      * -spawning new enemies
@@ -558,13 +577,102 @@
             }
         }
 
-        schedule(callbackFunction, delay, repeats){
+        schedule(callbackFunction, delay, repeats) {
 
         };
     }
 
+    /**
+     * handles and centralizes player input
+     */
+    class InputManager
+    {
+           //stores whether a key is down or not. this is necessary for smooth movement
+
+        constructor() {
+            //add event listeners for keyboard input
+            this.input = {up: false, down: false, left: false, right: false};
+
+            document.addEventListener("keydown", (event)=>{this.keyDownHandler(event)}, false);
+            document.addEventListener("keyup", (event)=>{this.keyUpHandler(event)}, false);
+        }
+
+        /**
+         * returns directional vector of the input
+         * @returns {Vector}
+         */
+        getDirection() {
+            this.direction = new Vector(0,0);
+            if (this.input.up) {
+                this.direction.y--;
+            }
+            if (this.input.down) {
+                this.direction.y++;
+            }
+            if (this.input.left) {
+                this.direction.x--;
+            }
+            if (this.input.right) {
+                this.direction.x++;
+            }
+            return this.direction;
+        }
+
+        /**
+         * handles what happens when a key is first pressed,
+         * and keeps going as long as the key is held down
+         * @param event
+         */
+        keyDownHandler(event) {
+            switch (event.key) {
+                case("ArrowDown"):
+                    // case("KeyS"):
+                    this.input.down = true;
+                    break;
+                case("ArrowUp"):
+                    // case("KeyW"):
+                    this.input.up = true;
+                    break;
+                case("ArrowRight"):
+                    // case("KeyD"):
+                    this.input.right = true;
+                    break;
+                case("ArrowLeft"):
+                    // case("KeyA"):
+                    this.input.left = true;
+                    break;
+            }
+        }
+
+        /**
+         * handles what happens when a key is let go of
+         * @param event
+         */
+        keyUpHandler(event) {
+            switch (event.key) {
+                case("ArrowDown"):
+                    this.input.down = false;
+                    break;
+                case("ArrowUp"):
+                    this.input.up = false;
+                    break;
+                case("ArrowRight"):
+                    this.input.right = false;
+                    break;
+                case("ArrowLeft"):
+                    this.input.left = false;
+                    break;
+            }
+        }
+    }
+
+
+    //=============================\\
+    //===BEGIN INITIALIZING GAME===\\
+    //=============================\\
+
     console.log("initializing...");
-    let screen = new Vector(window.innerWidth,window.innerHeight);
+    let screen = new Vector(window.innerWidth, window.innerHeight);
 
     let game = new GameManager(
         MAX_LIVES,
@@ -574,8 +682,13 @@
         document.getElementById("gameOverScreen")
     );
 
+    //initialize classes
+
+    let inputHandler = new InputManager();
+
     let playerCube = new PlayerController(
         document.getElementById("player"),
+        inputHandler,
         "player",
         80,
         80,
@@ -585,14 +698,13 @@
         60,
         1.2);
 
-    //initialize classes
     let spawner = new EnemyManager(MAX_ENEMIES, 3, 3, 6);
 
     let enemyCubeTemplate = document.getElementById("enemyTemplate").content.cloneNode(true);
 
     let controlPointTemplate = document.getElementById("controlPointTemplate").content.cloneNode(true);
 
-    let controlPoint = new ControlPoint(document.querySelector(".controlPoint"), "Control Point", 400, screen.x/2, screen.y/2);
+    let controlPoint = new ControlPoint(document.querySelector(".controlPoint"), "Control Point", 400, screen.x / 2, screen.y / 2);
 
     for (let i = 0; i < MAX_ENEMIES; i++) {
         //create a series of enemies
@@ -609,15 +721,8 @@
         spawner.addEnemyToList(new EnemyBlock(document.getElementById(newId), newName, 60 + i * 5, 60 + i * 5, 120, 120, 300), false);
     }
 
-
-    //initialize input management
-    let input = {up: false, down: false, left: false, right: false};
-
-    document.addEventListener("keydown", keyDownHandler, false);
-
-    document.addEventListener("keyup", keyUpHandler, false);
-
-    document.addEventListener("resize",()=>{
+    window.addEventListener("resize", () =>
+    {
         screen.x = window.innerWidth;
         screen.y = window.innerHeight;
     }, false);
@@ -633,35 +738,13 @@
     function tick() {
         game.tick();
         //player movement system
-        let inputVector = new Vector(0, 0);
-        if (input.up) {
-            inputVector.y--;
-        }
-        if (input.down) {
-            inputVector.y++;
-        }
-        if (input.left) {
-            inputVector.x--;
-        }
-        if (input.right) {
-            inputVector.x++;
-        }
 
-        playerCube.move(inputVector);
-        playerCube.forceGameBounds();
-
-        playerCube.draw();
+        playerCube.update();
 
         let loopIndex = 0;
         for (let enemy of spawner.enemiesList) {
             if (enemy.isActive) {
-                if (!enemy.isMoving) {
-                    enemy.pickDestination();
-                }
-                else {
-                    enemy.moveToTarget();
-
-                }
+                enemy.update();
                 enemy.draw();
                 if (playerCube.collisionCheck(enemy.collider)) {
                     game.loseLife();
@@ -672,43 +755,6 @@
         }
     }
 
-    function keyDownHandler(event) {
-        switch (event.key) {
-            case("ArrowDown"):
-                // case("KeyS"):
-                input.down = true;
-                break;
-            case("ArrowUp"):
-                // case("KeyW"):
-                input.up = true;
-                break;
-            case("ArrowRight"):
-                // case("KeyD"):
-                input.right = true;
-                break;
-            case("ArrowLeft"):
-                // case("KeyA"):
-                input.left = true;
-                break;
-        }
-    }
-
-    function keyUpHandler(event) {
-        switch (event.key) {
-            case("ArrowDown"):
-                input.down = false;
-                break;
-            case("ArrowUp"):
-                input.up = false;
-                break;
-            case("ArrowRight"):
-                input.right = false;
-                break;
-            case("ArrowLeft"):
-                input.left = false;
-                break;
-        }
-    }
 
     function gameOver() {
         clearInterval(gameTimer);
